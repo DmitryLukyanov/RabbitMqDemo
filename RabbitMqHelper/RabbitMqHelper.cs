@@ -8,7 +8,12 @@ namespace RabbitMq.Utils
     public interface IRabbitMqHelper
     {
         IConnection CreateConnection(IRabbitMqSettingsProvider settingsProvider);
-        void ConsumeListener(IConnection connection, IRabbitMqSettingsProvider settingsProvider, Action<string> receivedCallback, CancellationToken cancellationToken);
+        void ConsumeListener(
+            IConnection connection, 
+            IRabbitMqSettingsProvider settingsProvider, 
+            Action<string> receivedCallback, 
+            int prefetchCount,
+            CancellationToken cancellationToken);
         void GenerateAndPublishBatches(
             IConnection connection,
             IRabbitMqSettingsProvider settingsProvider,
@@ -42,11 +47,17 @@ namespace RabbitMq.Utils
             throw new TimeoutException($"RabbitMQ hasn't been launched during {timeout}.");
         }
 
-        public void ConsumeListener(IConnection connection, IRabbitMqSettingsProvider settingsProvider, Action<string> receivedCallback, CancellationToken cancellationToken)
+        public void ConsumeListener(
+            IConnection connection, 
+            IRabbitMqSettingsProvider settingsProvider, 
+            Action<string> receivedCallback, 
+            int prefetchCount,
+            CancellationToken cancellationToken)
         {
             using (var channel = connection.CreateModel())
             {
                 channel.QueueDeclare(queue: settingsProvider.QueueName, exclusive: false, durable: true, autoDelete: false, arguments: null);
+                channel.BasicQos(prefetchSize: 0, prefetchCount: (ushort)prefetchCount, global: false);
 
                 var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += (obj, e) =>
@@ -81,8 +92,8 @@ namespace RabbitMq.Utils
                 while (allRecordsCount > 0)
                 {
                     var batch = channel.CreateBasicPublishBatch();
-                    var effectiveBashSize = Math.Min(batchSize, allRecordsCount);
-                    for (int i = 0; i < effectiveBashSize; i++)
+                    var effectiveBatchSize = Math.Min(batchSize, allRecordsCount);
+                    for (int i = 0; i < effectiveBatchSize; i++)
                     {
                         var bodyBytes = getBatchItem();
 #pragma warning disable CS0618 // Type or member is obsolete

@@ -54,14 +54,12 @@ namespace DemoApi.Controllers
         }
 
         [HttpDelete("stored")]
-        [ProducesResponseType((int)HttpStatusCode.NotFound)]
         public async Task Remove()
         {
             await _hashesRepository.ClearAllStoredHashes();
         }
 
         [HttpPost("generatedShaRequests")]
-        [ProducesResponseType((int)HttpStatusCode.OK)]
         public async Task Post()
         {
             var fullCount = _settingsProvider.NumberOfHashes;

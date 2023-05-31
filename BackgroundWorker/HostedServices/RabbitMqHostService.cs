@@ -79,6 +79,7 @@ namespace BackgroundWorker.HostedServices
                                 _logger.LogInformation($"A queue consumer [{index}] processed {processed} records.");
                             }
                         },
+                        prefetchCount: 100,
                         cancellationToken);
                 }
             }
